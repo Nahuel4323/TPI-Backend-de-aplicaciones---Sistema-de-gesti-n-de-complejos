@@ -1,0 +1,15 @@
+{
+  "realm": "complejos-deportivos",
+  "enabled": true,
+  "displayName": "Complejos Deportivos",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "CLIENTE", "description": "Cliente de los complejos deportivos" },
+      { "name": "ADMIN", "description": "Administrador de los complejos deportivos" }
+    ]
+  }
+}

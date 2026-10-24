@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-BookingsApplication<bookings>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/msvc-bookings",
+            "mainClass": "ar.edu.utn.frc.bookings.BookingsApplication",
+            "projectName": "bookings",
+            "vmArgs": "-Duser.timezone=UTC",
+            "args": "",
+            "envFile": "${workspaceFolder}/msvc-bookings/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-SpacesApplication<spaces>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/msvc-spaces",
+            "mainClass": "ar.edu.utn.frc.spaces.SpacesApplication",
+            "projectName": "spaces",
+            "vmArgs": "-Duser.timezone=UTC",
+            "args": "",
+            "envFile": "${workspaceFolder}/msvc-spaces/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-UsersApplication<users>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/msvc-users",
+            "mainClass": "ar.edu.utn.frc.users.UsersApplication",
+            "projectName": "users",
+            "vmArgs": "-Duser.timezone=UTC",
+            "args": "",
+            "envFile": "${workspaceFolder}/msvc-users/.env"
+        }
+    ]
+}

@@ -1,4 +1,3 @@
-
 # TPI Backend — Gestión de Complejos Deportivos
 
 Trabajo Práctico Integrador de la materia **Backend de Aplicaciones** de Ingeniería en Sistemas de Información — UTN Facultad Regional Córdoba.
@@ -38,6 +37,10 @@ Responsable de gestionar el ciclo de vida de las reservas:
 - **Common Library:** librería JAR reutilizable entre microservicios.
 - **API climática externa:** consulta de pronósticos para evaluar reservas.
 
+### Diagrama general de arquitectura
+
+<img src="docs/img/arquitectura-general.png" alt="Arquitectura general del sistema" width="700">
+
 ## Tecnologías
 
 - Java
@@ -59,18 +62,49 @@ Se utilizará un único repositorio para todos los microservicios (monorepo).
 
 ```text
 backend-complejos-deportivos/
-├── api-gateway/
+├── msvc-gateway/
 ├── msvc-users/
 ├── msvc-spaces/
 ├── msvc-bookings/
 ├── common-lib/
 ├── docs/
-├── docker-compose.yml
+│   └── img/
+│       ├── arquitectura-general.png
+│       ├── c4-contexto-c1.png
+│       └── c4-contenedores-c2.png
 ├── .gitignore
 └── README.md
 ```
 
 *La estructura se incorporará progresivamente durante el desarrollo.*
+
+Docker Compose incluye Keycloak con su propia base PostgreSQL y otro PostgreSQL para los microservicios, ambos con volumenes persistentes. Ver las [instrucciones de Keycloak local](infra/keycloak/README.md) y [PostgreSQL de los microservicios](infra/postgres/README.md).
+
+### Configuración local
+
+Se requiere JDK 25. Los puertos predeterminados son: gateway `8080`, users `8081`, spaces `8082` y bookings `8083`.
+
+Docker Compose publica PostgreSQL de los microservicios en `localhost:5433` y crea `users_db`, `spaces_db` y `bookings_db` al inicializar su volumen por primera vez. No requiere instalar PostgreSQL ni pgAdmin. Cada servicio carga su propio archivo `.env` desde su carpeta de ejecución. Los archivos `.env` están excluidos de Git; las plantillas `.env.example` se comparten en el repositorio.
+
+Para una nueva copia del repositorio, ejecutar desde la carpeta de cada servicio:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Preparar tambien el `.env` raiz siguiendo la [guia de PostgreSQL](infra/postgres/README.md). Los usuarios de los servicios son `users`, `spaces` y `bookings`. Copiar `USERS_DB_PASSWORD`, `SPACES_DB_PASSWORD` y `BOOKINGS_DB_PASSWORD` del `.env` raiz al `DB_PASSWORD` del servicio correspondiente. El gateway no necesita credenciales de base de datos. Levantar Docker Compose desde la raiz y luego iniciar desde la carpeta del servicio:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+La carga se configura mediante `spring.config.import=optional:file:./.env[.properties]`. El archivo se interpreta como Java properties: usar `CLAVE=valor`, sin `export` ni comillas alrededor de los valores. Para valores que contengan barras invertidas, escaparlas como `\\`. Cada servicio puede usar credenciales diferentes. Las variables de entorno de la terminal tienen prioridad sobre el `.env`. En el IDE, establecer la carpeta de cada servicio como directorio de trabajo.
+
+La variable opcional `DB_URL` permite reemplazar la URL JDBC completa de cada servicio; `SERVER_PORT` permite cambiar su puerto. Para desarrollo local, Hibernate usa `ddl-auto=update`: crea y actualiza tablas a partir de las clases `@Entity` al iniciar cada microservicio. Los cambios complejos de esquema pueden requerir SQL o migraciones; revisar esta opcion antes de desplegar fuera del entorno local.
+
+El gateway reenvía `/api/users/**`, `/api/spaces/**` y `/api/bookings/**` conservando la ruta completa. Sus destinos se pueden cambiar con `USERS_SERVICE_URL`, `SPACES_SERVICE_URL` y `BOOKINGS_SERVICE_URL`. Si cambia el puerto de un servicio, también debe cambiarse su destino en el gateway.
+
+Keycloak dispone de un entorno Docker local; su integración con el gateway está pendiente. Spring Security permanece activo en el gateway con su configuración predeterminada; las rutas no quedan abiertas al acceso anónimo. Los controladores de los servicios todavía están pendientes.
 
 ## Metodología de trabajo
 
@@ -112,43 +146,6 @@ Los estados utilizados serán:
 - **En revisión:** funcionalidad terminada, pendiente de revisión e integración.
 - **Terminada:** funcionalidad integrada y verificada.
 
-### Flujo de trabajo
-
-1. Seleccionar una historia de usuario del tablero Kanban y asignar un responsable.
-2. Actualizar la rama personal con los últimos cambios de `main` antes de comenzar una nueva funcionalidad.
-3. Implementar la funcionalidad en la rama personal, realizando commits descriptivos a medida que se avanza.
-4. Probar los cambios y verificar que se cumplan los criterios de aceptación de la historia.
-5. Subir los cambios a GitHub y crear un Pull Request hacia `main`.
-6. Solicitar la revisión de otro integrante del equipo.
-7. Una vez aprobados los cambios, integrar la funcionalidad en `main` y actualizar su estado en Notion.
-8. Sincronizar nuevamente la rama personal con `main` antes de comenzar otra funcionalidad.
-
-**Importante:** cada Pull Request deberá incluir únicamente los cambios correspondientes a la funcionalidad que se está integrando. Las ramas personales no se eliminarán después de realizar un merge.
-
-### Convención de commits
-
-Se utilizarán mensajes descriptivos siguiendo la convención *Conventional Commits*.
-
-Ejemplos:
-
-```text
-feat(users): agregar registro de clientes
-fix(bookings): corregir validacion de disponibilidad
-docs: actualizar documentacion de endpoints
-chore: configurar proyecto Spring Boot
-test(users): agregar pruebas de registro
-refactor(spaces): mejorar validacion de horarios
-```
-
-### Integración y sincronización
-
-Antes de comenzar una nueva funcionalidad, cada integrante deberá incorporar a su rama personal los últimos cambios disponibles en `main`.
-
-Esto permitirá trabajar sobre una versión actualizada del proyecto y reducir los posibles conflictos durante la integración.
-
-Los cambios se incorporarán a `main` exclusivamente mediante Pull Requests revisados por otro integrante del equipo.
-
-
 ## Documentación
 
 La documentación del proyecto incluirá:
@@ -158,6 +155,15 @@ La documentación del proyecto incluirá:
 - Diagramas de arquitectura C4 (C1 y C2).
 - Documentación de APIs mediante Swagger/OpenAPI.
 - Instrucciones de instalación y ejecución.
+
+### Diagramas C4
+
+#### C1 — Diagrama de Contexto
+<img src="docs/img/c4-contexto-c1.png" alt="Arquitectura general del sistema" width="700">
+
+
+#### C2 — Diagrama de Contenedores
+<img src="docs/img/c4-contenedores-c2.png" alt="Arquitectura general del sistema" width="700">
 
 ## Estado del proyecto
 

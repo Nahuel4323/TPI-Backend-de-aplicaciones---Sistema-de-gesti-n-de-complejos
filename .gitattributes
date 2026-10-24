@@ -1,0 +1,2 @@
+# Los scripts de inicializacion se ejecutan en contenedores Linux.
+infra/postgres/init/*.sh text eol=lf
