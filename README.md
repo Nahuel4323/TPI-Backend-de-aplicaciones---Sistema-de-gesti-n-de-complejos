@@ -43,7 +43,7 @@ Responsable de gestionar el ciclo de vida de las reservas:
 
 ## Tecnologías
 
-- Java
+- Java 25
 - Spring Boot
 - Spring Security
 - Spring Cloud Gateway
@@ -58,29 +58,48 @@ Responsable de gestionar el ciclo de vida de las reservas:
 
 ## Estructura del repositorio
 
-Se utilizará un único repositorio para todos los microservicios (monorepo).
+Se utiliza un único repositorio para todos los microservicios (monorepo). Cada proyecto tiene su propio `pom.xml`; no hay un POM agregador en la raíz.
 
 ```text
 backend-complejos-deportivos/
+├── .github/
+├── .vscode/
+│   ├── launch.json
+│   └── settings.json
+├── common-lib/
 ├── msvc-gateway/
 ├── msvc-users/
 ├── msvc-spaces/
 ├── msvc-bookings/
-├── common-lib/
+├── infra/
+│   ├── keycloak/
+│   │   ├── README.md
+│   │   └── realms/
+│   │       └── complejos-deportivos-realm.json
+│   └── postgres/
+│       ├── README.md
+│       └── init/
+│           └── 01-create-databases.sh
 ├── docs/
 │   └── img/
 │       ├── arquitectura-general.png
 │       ├── c4-contexto-c1.png
 │       └── c4-contenedores-c2.png
+├── .env.example
+├── .gitattributes
 ├── .gitignore
+├── docker-compose.yml
+├── requisitos.md
 └── README.md
 ```
 
-*La estructura se incorporará progresivamente durante el desarrollo.*
+Los cuatro servicios incluyen `pom.xml`, Maven Wrapper, `src/main`, `src/test` y `.env.example`. `common-lib` es una biblioteca JAR con su propio POM. Los `.env` locales y las carpetas generadas `target/` se omiten del árbol y no se versionan.
 
 Docker Compose incluye Keycloak con su propia base PostgreSQL y otro PostgreSQL para los microservicios, ambos con volumenes persistentes. Ver las [instrucciones de Keycloak local](infra/keycloak/README.md) y [PostgreSQL de los microservicios](infra/postgres/README.md).
 
-### Configuración local
+## Configuración local
+
+Para preparar una computadora nueva, seguir [requisitos.md](requisitos.md): incluye instalaciones, credenciales, ejecución con Spring Boot Dashboard o Maven y solución de problemas frecuentes.
 
 Se requiere JDK 25. Los puertos predeterminados son: gateway `8080`, users `8081`, spaces `8082` y bookings `8083`.
 
@@ -92,11 +111,21 @@ Para una nueva copia del repositorio, ejecutar desde la carpeta de cada servicio
 Copy-Item .env.example .env
 ```
 
-Preparar tambien el `.env` raiz siguiendo la [guia de PostgreSQL](infra/postgres/README.md). Los usuarios de los servicios son `users`, `spaces` y `bookings`. Copiar `USERS_DB_PASSWORD`, `SPACES_DB_PASSWORD` y `BOOKINGS_DB_PASSWORD` del `.env` raiz al `DB_PASSWORD` del servicio correspondiente. El gateway no necesita credenciales de base de datos. Levantar Docker Compose desde la raiz y luego iniciar desde la carpeta del servicio:
+Preparar tambien el `.env` raiz siguiendo la [guia de PostgreSQL](infra/postgres/README.md). Los usuarios de los servicios son `users`, `spaces` y `bookings`. Copiar `USERS_DB_PASSWORD`, `SPACES_DB_PASSWORD` y `BOOKINGS_DB_PASSWORD` del `.env` raiz al `DB_PASSWORD` del servicio correspondiente. El gateway no necesita credenciales de base de datos. Con Docker Desktop iniciado, levantar la infraestructura desde la raíz:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+docker compose config --quiet
+docker compose up -d
+docker compose ps
 ```
+
+PostgreSQL se publica en `localhost:5433` y la consola de Keycloak en [localhost:8180/admin](http://localhost:8180/admin). Luego iniciar cada servicio desde su carpeta, en terminales separadas y con JDK 25 activo:
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC"
+```
+
+Como alternativa, instalar Spring Boot Extension Pack y usar Spring Boot Dashboard en VS Code. El archivo `.vscode/launch.json` configura users, spaces y bookings con su propia carpeta de trabajo, su `.env` y `-Duser.timezone=UTC`. Abrir el repositorio completo como carpeta raíz. Para el gateway, usar el comando Maven anterior hasta agregar su configuración de ejecución.
 
 La carga se configura mediante `spring.config.import=optional:file:./.env[.properties]`. El archivo se interpreta como Java properties: usar `CLAVE=valor`, sin `export` ni comillas alrededor de los valores. Para valores que contengan barras invertidas, escaparlas como `\\`. Cada servicio puede usar credenciales diferentes. Las variables de entorno de la terminal tienen prioridad sobre el `.env`. En el IDE, establecer la carpeta de cada servicio como directorio de trabajo.
 
@@ -148,7 +177,9 @@ Los estados utilizados serán:
 
 ## Documentación
 
-La documentación del proyecto incluirá:
+Guías disponibles: [requisitos y ejecución](requisitos.md), [Keycloak local](infra/keycloak/README.md) y [PostgreSQL de los microservicios](infra/postgres/README.md).
+
+La documentación funcional y técnica del proyecto incluirá:
 
 - Modelo de dominio y reglas de negocio.
 - Diagramas de bases de datos.
@@ -167,9 +198,13 @@ La documentación del proyecto incluirá:
 
 ## Estado del proyecto
 
-**En etapa inicial de configuración.**
+**Entorno local preparado para comenzar el desarrollo de funcionalidades.**
 
-Actualmente se está definiendo la estructura del repositorio, la organización del equipo y las configuraciones necesarias para comenzar con el desarrollo de los microservicios.
+Se crearon los tres microservicios de negocio, el gateway y la biblioteca compartida con Java 25. Docker Compose levanta Keycloak y dos instancias PostgreSQL con volúmenes persistentes; las bases y usuarios de negocio se inicializan automáticamente. Cada servicio usa su propio `.env`, y Hibernate crea o actualiza tablas a partir de las entidades al arrancar durante el desarrollo local.
+
+Se comprobó el arranque de los contenedores y la conexión de los servicios de negocio en el entorno del equipo. La configuración de VS Code permite ejecutar users, spaces y bookings con sus credenciales y zona horaria UTC.
+
+Quedan pendientes la implementación de entidades, repositorios, servicios y controladores de negocio; los clientes OAuth2 y la integración del login y autorización con Keycloak; y la integración de la biblioteca compartida cuando haya código común. Los roles iniciales del realm son `CLIENTE` y `ADMIN`. La infraestructura disponible todavía no representa funcionalidades de negocio terminadas.
 
 ## Organización
 
